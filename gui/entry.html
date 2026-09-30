@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Testing Window</title>
+    <script src="https://www.webrtc-experiment.com/EBML.js"></script>
+    <script src="https://www.WebRTC-Experiment.com/RecordRTC.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.0/FileSaver.min.js"></script>
+    <script src="./video_recorder.js" defer></script>
+    <script src="./entry.js" defer></script>
+    <link rel="stylesheet" href="./entry.css"/>
+</head>
+<body>
+    <div id="main">
+        <input id="state-value" type="hidden" name="state" value="0"/>
+        <input id="form-value" type="hidden" name="isSubmitted" value="false"/>
+        <input id="currTask" type="hidden" name="currTask" value="-1"/>
+        <input id="hidden-participant-id" type="hidden" name="hiddenParticipantID" value="-1"/>
+        <div id="header">
+            <h1 id="header-text"></h1>
+        </div>
+        <div id="main">
+            <div id="instructions">
+                <p id="instructions-text"></p>
+            </div>
+            <div id="loader">
+                <img id="loader-gif" src="./assets/circle-loader-centered.gif" width="100" height="100"/>
+            </div>
+        </div>
+        <div id="id-input">
+            <form id="id-input-form" id="participant-input">
+                <label id="participant-id-label" for="participant-id">Participant ID:</label>
+                <input id="participant-id" name="participant-id" required typ="number"/>
+                <p id="participant-id-error" class="error-text">Please input a valid ID number</p>
+            </form>
+        </div> 
+        <div id="countdown">
+            <h1 id="countdown-num" class="countdown">3</h1>
+        </div>
+        <div id="countup">
+            <h1 id="countup-num" class="countdown">3</h1>
+        </div>
+        <audio id="clicktrack" src=""></audio>
+        <div id="buttons">
+            <button id="button-prev" class="navigation-button" onclick="prev_state();">Prev</button>
+            <button id="button-next" class="navigation-button" onclick="next_state();">Next</button>
+        </div>
+    </div>
+</body>
+</html>

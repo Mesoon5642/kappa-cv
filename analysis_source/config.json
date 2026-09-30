@@ -1,0 +1,39 @@
+{
+    "TapPositions": {
+        "FINGER_A": 8,
+        "FINGER_B": 4,
+        "RELATIVE_TOUCH_THRESHOLD": 0.15,
+        "DEBOUNCE_FRAMES": 2,
+        "SMOOTHING_WINDOW": 1,
+        "FPS": 60
+      },
+    "TapCSVPrune": {
+      "PRUNE_START": 0,
+      "PRUNE_END": 0,
+      "MAX_TAPS_PER_SEC": 3,
+      "MIN_TAPS_PER_SEC": 1,
+      "WINDOW_SIZE": 1.0,
+      "MIN_TAP_LENGTH": 0.075,
+      "BPM": 60,
+      "RAW_AUDIO": true,
+      "DROP_EXCESSIVE_TAPS": true,
+      "FIX_SLOW_TAPS": true
+    },
+    "TapDrift":{
+      "RAW_AUDIO": true,
+      "BPM": 60
+    },
+    "CirclePositions": {
+        "FINGER": 8,
+        "FPS": 60
+      },
+    "CircleDetector": {
+        "RADIUS_VARIATION_THRESH": 20,
+        "CURVATURE_SMOOTHNESS_THRESH": 99999,
+        "MIN_ROTATION_RADIANS": 6.283185307179586,
+        "MIN_CIRCLE_DURATION": 0.5,
+        "MOVING_AVERAGE_WINDOW": 5,
+        "REQUIRE_QUADRANTS": false,
+        "PLOT_CIRCLES": true
+      }
+  }

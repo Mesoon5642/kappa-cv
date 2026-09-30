@@ -1,0 +1,77 @@
+#main{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: sans-serif !important;
+}
+
+#header{
+    margin-top: 20vh;
+}
+
+#header-text{
+    font-weight: lighter !important;
+}
+
+#buttons{
+    position: absolute;
+    top: 60vh;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+}
+
+#instructions-text{
+    font-size: 1.5rem;
+    margin: 1rem 20rem;
+    text-align: center;
+}
+
+#loader-gif{
+    display: none;
+    transition: display 0.5s ease;
+}
+
+#id-input-form{
+    display: none;
+    flex-direction: column;
+}
+
+#id-input-form input{
+    height: 3rem;
+    font-size: 1.5rem;
+}
+
+#participant-id-label{
+    text-align: center;
+    margin: 1rem auto;
+    font-size: 1.5rem;
+}
+
+#participant-id-error{
+    display: none;
+}
+
+.navigation-button{
+    margin: 0px 2rem;
+    padding: 2rem 4rem;
+    font-size: larger;
+    background-color: white;
+    transition: background-color 0.1s ease;
+    border-style: groove;
+    border-width: 3px;
+}
+
+.navigation-button:hover{
+    background-color: lightgray;
+}
+
+.error-text{
+    color: red;
+}
+
+.countdown{
+    font-size: 4rem;
+    display: none;
+    margin-bottom: 0;
+}
