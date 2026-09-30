@@ -345,6 +345,15 @@ function tap_task(state){
             task_intro_state(flow[expIndex], state);
             return;
         }
+
+        if ((withAudioDictionary[flow[expIndex]] ? TAP_AUDIO_NUMPRACTICE : TAP_NOAUDIO_NUMPRACTICE) <= 0){
+            block = 1;
+            enableDisablePrev(false);
+            document.getElementById("countdown-num").style.display = "none";
+            document.getElementById("state-value").value = 1;
+            tap_task(1);
+            return;
+        }
     
         let shiftedState = state - introLength;
     
@@ -413,6 +422,15 @@ function circle_task(state){
 
         if (state < introLength){
             task_intro_state(flow[expIndex], state);
+            return;
+        }
+
+        if ((withAudioDictionary[flow[expIndex]] ? CIRCLE_AUDIO_NUMPRACTICE : CIRCLE_NOAUDIO_NUMPRACTICE) <= 0){
+            block = 1;
+            enableDisablePrev(false);
+            document.getElementById("countdown-num").style.display = "none";
+            document.getElementById("state-value").value = 1;
+            circle_task(1);
             return;
         }
     
