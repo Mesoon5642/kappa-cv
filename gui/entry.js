@@ -13,13 +13,14 @@
 3: Circle Task, With Audio
 
 */
-const HARDCODED_FLOW = [3, 2, 0, 1]
+const HARDCODED_FLOW = [1, 0, 3, 2]
 
 // Number of tap practice trials, actual tap trials per block, and total blocks
 // Total trials = TAP_NUMTRIALS * TAP_NUMBLOCKS
-const TAP_NOAUDIO_NUMPRACTICE = 2;
-const TAP_NOAUDIO_NUMTRIALS = 2;
-const TAP_NOAUDIO_NUMBLOCKS = 2;
+// (for with-audio tasks, this is per audio condition, see HARDCODED_AUDIO_FLOW)
+const TAP_NOAUDIO_NUMPRACTICE = 0;
+const TAP_NOAUDIO_NUMTRIALS = 1;
+const TAP_NOAUDIO_NUMBLOCKS = 1;
 
 const TAP_AUDIO_NUMPRACTICE = TAP_NOAUDIO_NUMPRACTICE
 const TAP_AUDIO_NUMTRIALS = TAP_NOAUDIO_NUMTRIALS
@@ -34,15 +35,35 @@ const CIRCLE_AUDIO_NUMPRACTICE = TAP_NOAUDIO_NUMPRACTICE
 const CIRCLE_AUDIO_NUMTRIALS = TAP_NOAUDIO_NUMTRIALS
 const CIRCLE_AUDIO_NUMBLOCKS = TAP_NOAUDIO_NUMBLOCKS
 
-// How long the video will record for, in seconds.
-// NOTE: MAKE SURE THAT THIS MATCHES THE AUDIO CLIP LENGTH
+// How long the video will record for, in seconds, for NO-AUDIO trials.
+// With-audio trials record for the lengthSec of their audio condition (see AUDIO_SOURCES)
 // (also not in doCountDown, countdown values currently go unused)
 const TRIAL_TIME_SEC  = 10;
 
-// Audio path for "audio included" trials
-// MAKE SURE THE DURATION OF THIS IN SECONDS MATCHES THE VALUE OF TRIAL_TIME_SEC
-// (note to developer: implement this later as something that can vary for tap/circle/block/etc?)
-AUDIO_SOURCE = "./assets/click-track-60bpm.wav"
+// Audio for "audio included" trials. Each entry is one audio condition,
+// referred to by its index (0, 1, 2, ...) in HARDCODED_AUDIO_FLOW and in recorded filenames
+// src: path to the audio file
+// lengthSec: how long trials with this audio record for, in seconds
+// MAKE SURE EACH lengthSec MATCHES ITS CLIP'S DURATION (a console warning fires if they differ)
+const AUDIO_SOURCES = [
+    { src: "./assets/BBNTempo_700_loc0_step0_perc0_sync.wav", lengthSec: 22 },
+    { src: "./assets/ComboTempo_700_loc0_step0_perc0_sync.wav", lengthSec: 21 },
+    { src: "./assets/GlissTempo_700_loc0_step0_perc0_sync.wav", lengthSec: 22 }
+];
+
+// Hardcoded order of audio conditions for each with-audio task, keyed by task index (see flow indexing above)
+// Each audio condition in a task's order gets its own full set of recorded blocks, in that order.
+// Practice trials (if any) play the first audio condition in the task's order.
+// If a task's entry is left undefined or empty, its audio order is generated randomly
+// Example with two conditions:
+//   AUDIO_SOURCES = [
+//       { src: "./assets/click-track-60bpm.wav", lengthSec: 10 },
+//       { src: "./assets/click-track-90bpm.wav", lengthSec: 15 }
+//   ]
+//   HARDCODED_AUDIO_FLOW = { 1: [0, 1], 3: [1, 0] }
+const HARDCODED_AUDIO_FLOW = {
+
+}
 
 
 // Text values for non-tap/circle screens
@@ -155,6 +176,11 @@ device = null;
 trial = 1;
 block = 0;
 
+// Order of audio conditions for the current task (empty for no-audio tasks),
+// and the position of the current audio condition within that order
+audioFlow = []
+audioIndex = 0
+
 const taskDictionary = {
     0: tap_task,
     1: tap_task,
@@ -177,7 +203,7 @@ window.addEventListener('load', async () => {
   let stateVal = Number(document.getElementById("state-value").value);
   let currTask = Number(document.getElementById("currTask").value);
   const audio = document.getElementById("clicktrack");
-  audio.src = AUDIO_SOURCE;
+  audio.src = AUDIO_SOURCES[0].src;
   audio.load();
   device = await navigator.mediaDevices.getUserMedia({video: 
     {frameRate: {ideal: 60, max: 120}}, audio: true});
@@ -295,12 +321,15 @@ function pretest_instruction_state(index){
 function task_flow_init(){
     console.log("init called!")
     document.getElementById("state-value").value = 0;
-    flow = []
     console.log("init called!")
-    if (HARDCODED_FLOW.length != 0){
-        flow = HARDCODED_FLOW
-    } else {
-        flow = generateRandomFlow();
+    // Only build the flow once. This runs again after every task, and
+    // regenerating here would reshuffle a random flow mid-experiment
+    if (flow.length == 0){
+        if (HARDCODED_FLOW.length != 0){
+            flow = HARDCODED_FLOW
+        } else {
+            flow = generateRandomFlow();
+        }
     }
     if (expIndex >= flow.length){
         enableDisableNext(false)
@@ -312,6 +341,20 @@ function task_flow_init(){
     
         return;
     }
+
+    // Build the audio condition order for this task (stays empty for no-audio tasks)
+    audioFlow = []
+    audioIndex = 0
+    if (withAudioDictionary[flow[expIndex]]){
+        const hardcodedAudioFlow = HARDCODED_AUDIO_FLOW[flow[expIndex]];
+        if (hardcodedAudioFlow && hardcodedAudioFlow.length != 0){
+            audioFlow = hardcodedAudioFlow
+        } else {
+            audioFlow = generateRandomFlow(AUDIO_SOURCES.map((_, i) => i));
+        }
+        loadAudioCondition(audioFlow[0]);
+    }
+
     document.getElementById("currTask").value = flow[expIndex]
 
     stateFunction = taskDictionary[flow[expIndex]]
@@ -332,11 +375,20 @@ function task_intro_state(taskType, index){
 function tap_task(state){
     console.log("state called!")
     if (block > (withAudioDictionary[flow[expIndex]] ? TAP_AUDIO_NUMBLOCKS : TAP_NOAUDIO_NUMBLOCKS)){
-        expIndex += 1
-        block = 0;
-        trial = 1;
-        task_flow_init();
-        return;
+        // Audio conditions left for this task: rerun the recorded blocks with the next one.
+        // We arrive here from tap_state_8 at state 5, so this falls through to the block-complete screen
+        if (audioIndex < audioFlow.length - 1){
+            audioIndex += 1
+            loadAudioCondition(audioFlow[audioIndex])
+            block = 1;
+            trial = 1;
+        } else {
+            expIndex += 1
+            block = 0;
+            trial = 1;
+            task_flow_init();
+            return;
+        }
     }
     if (block == 0){
         const introLength = TASK_OVERVIEWS[flow[expIndex]].length;
@@ -346,6 +398,7 @@ function tap_task(state){
             return;
         }
 
+        // Zero practice trials configured: skip straight to the first recorded block
         if ((withAudioDictionary[flow[expIndex]] ? TAP_AUDIO_NUMPRACTICE : TAP_NOAUDIO_NUMPRACTICE) <= 0){
             block = 1;
             enableDisablePrev(false);
@@ -409,11 +462,20 @@ function circle_task(state){
     console.log("circle state called!")
 
     if (block > (withAudioDictionary[flow[expIndex]] ? CIRCLE_AUDIO_NUMBLOCKS : CIRCLE_NOAUDIO_NUMBLOCKS)){
-        expIndex += 1
-        block = 0;
-        trial = 1;
-        task_flow_init();
-        return;
+        // Audio conditions left for this task: rerun the recorded blocks with the next one.
+        // We arrive here from circle_state_8 at state 5, so this falls through to the block-complete screen
+        if (audioIndex < audioFlow.length - 1){
+            audioIndex += 1
+            loadAudioCondition(audioFlow[audioIndex])
+            block = 1;
+            trial = 1;
+        } else {
+            expIndex += 1
+            block = 0;
+            trial = 1;
+            task_flow_init();
+            return;
+        }
     }
 
     // PRACTICE BLOCK
@@ -425,6 +487,7 @@ function circle_task(state){
             return;
         }
 
+        // Zero practice trials configured: skip straight to the first recorded block
         if ((withAudioDictionary[flow[expIndex]] ? CIRCLE_AUDIO_NUMPRACTICE : CIRCLE_NOAUDIO_NUMPRACTICE) <= 0){
             block = 1;
             enableDisablePrev(false);
@@ -514,7 +577,7 @@ function tap_state_3(isAudio){
     document.getElementById("instructions-text").innerText = ""
     enableDisableNext(false)
     enableDisablePrev(false)
-    doCountdownRecord(3, TRIAL_TIME_SEC, isAudio, true)
+    doCountdownRecord(3, getTrialLengthSec(isAudio), isAudio, true)
 }
 
 function tap_state_4(){
@@ -548,7 +611,7 @@ function tap_state_7(isAudio){
     document.getElementById("instructions-text").innerText = ""
     enableDisableNext(false)
     enableDisablePrev(false)
-    doCountdownRecord(3, TRIAL_TIME_SEC, isAudio, false)
+    doCountdownRecord(3, getTrialLengthSec(isAudio), isAudio, false)
 }
 
 function tap_state_8(){
@@ -594,7 +657,7 @@ function circle_state_3(isAudio){
     enableDisableNext(false)
     enableDisablePrev(false)
 
-    doCountdownRecord(3, TRIAL_TIME_SEC, isAudio, true)
+    doCountdownRecord(3, getTrialLengthSec(isAudio), isAudio, true)
 }
 
 function circle_state_4(){
@@ -635,7 +698,7 @@ function circle_state_7(isAudio){
     enableDisableNext(false)
     enableDisablePrev(false)
 
-    doCountdownRecord(3, TRIAL_TIME_SEC, isAudio, false)
+    doCountdownRecord(3, getTrialLengthSec(isAudio), isAudio, false)
 }
 
 function circle_state_8(){
@@ -709,7 +772,8 @@ function doCountdownRecord(countdownMax, videoLength, isAudio, isPractice){
 // If isPractice is true, no actual data is recorded, but the trial "plays out"
 // If isPractice is false, a trial is ran as normal and data is recorded
 // Format for filename:
-// (participantID)_(circle/tap)_(withAudio/noAudio)_(block)_(trial)
+// (participantID)_(circle/tap)_(withAudioN/noAudio)_(block)_(trial)
+// where N is the audio condition's index in AUDIO_SOURCES
 async function beginRecordWrapper(videoLength, isAudio, isPractice){
     const countUpText = document.getElementById("countup-num")
     const countDownText = document.getElementById("countdown-num")
@@ -721,7 +785,7 @@ async function beginRecordWrapper(videoLength, isAudio, isPractice){
         taskName = "tap"
     }
     if (isAudio){
-        audioName = "withAudio"
+        audioName = `withAudio${audioFlow[audioIndex]}`
     }
     if (isAudio){
         playAudio();
@@ -763,9 +827,29 @@ function stopAudio(){
     ct.currentTime = 0;
 }
 
-// Note, this may need to be modified in the future to be more configurable
-function generateRandomFlow() {
-    const base = [0, 1, 2, 3];
+// Swaps the trial audio to the given audio condition (index into AUDIO_SOURCES)
+function loadAudioCondition(audioCond){
+    const ct = document.getElementById("clicktrack");
+    const cond = AUDIO_SOURCES[audioCond];
+    // Sanity check that the configured length matches the clip once it loads
+    ct.addEventListener("loadedmetadata", () => {
+        if (Math.abs(ct.duration - cond.lengthSec) > 0.5){
+            console.warn(`Audio condition ${audioCond} (${cond.src}) is ${ct.duration.toFixed(2)}s long, but lengthSec is ${cond.lengthSec}`);
+        }
+    }, { once: true });
+    ct.src = cond.src;
+    ct.load();
+}
+
+// How long the current trial runs/records for, in seconds
+function getTrialLengthSec(isAudio){
+    return isAudio ? AUDIO_SOURCES[audioFlow[audioIndex]].lengthSec : TRIAL_TIME_SEC;
+}
+
+// Shuffles the given list of condition indices (defaults to the four task conditions)
+// Used for both the task flow and each task's audio condition order
+function generateRandomFlow(base = [0, 1, 2, 3]) {
+    base = base.slice();
 
     // Fisher-Yates shuffle
     for (let i = base.length - 1; i > 0; i--) {
