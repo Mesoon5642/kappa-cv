@@ -131,6 +131,9 @@ const TRIAL_COMPLETE_TEXT = "You completed a trial! Press Next when you are read
 // Text shown for completing a non-practice (recorded) block (circle or tap)
 const BLOCK_COMPLETE_TEXT = "You completed a block! Press Next to move on to the next block!";
 
+// Text shown for completing all blocks of a task (circle or tap)
+const TASK_COMPLETE_TEXT = "You completed this task! Press Next to move on to the next task.";
+
 // Header for experiment complete (all tasks finished)
 const EXPR_COMPLETE_HEADER = "Experiment Complete"
 
@@ -148,20 +151,20 @@ const EXPR_COMPLETE_TEXT = "All tasks complete. Thank you!"
 */
 const TASK_OVERVIEWS = {
     0: [
-        "In this task, you will tap to the beat of an audio recording.",
-        "Try to match when you tap with when the click happens in the recording."
-    ],
-    1: [
         "In this task, you will tap at a consistent speed.",
         "Maintain a steady rhythm for 10 seconds."
     ],
-    2: [
-        "In this task, you will move your hand in a circular motion to a beat.",
-        "Try to match when each circle completes with the click."
+    1: [
+        "In this task, you will tap to the beat of an audio recording.",
+        "Try to match when you tap with when the click happens in the recording."
     ],
-    3: [
+    2: [
         "In this task, you will move your hand in a smooth circular motion.",
         "Keep the motion continuous for 10 seconds."
+    ],
+    3: [
+        "In this task, you will move your hand in a circular motion to a beat.",
+        "Try to match when each circle completes with the click."
     ]
 }
 
@@ -205,12 +208,14 @@ window.addEventListener('load', async () => {
   const audio = document.getElementById("clicktrack");
   audio.src = AUDIO_SOURCES[0].src;
   audio.load();
-  device = await navigator.mediaDevices.getUserMedia({video: 
-    {frameRate: {ideal: 60, max: 120}}, audio: true});
   if (currTask != -1){
     stateFunction = taskDictionary[currTask]
   }
+  // Render the first screen before asking for the camera, so the welcome
+  // text isn't blank while the permission prompt is open
   stateFunction(stateVal);
+  device = await navigator.mediaDevices.getUserMedia({video:
+    {frameRate: {ideal: 60, max: 120}}, audio: true});
 });
 
 // Goes to next state (current logic handler function controls what page loads on given state)
@@ -383,6 +388,11 @@ function tap_task(state){
             block = 1;
             trial = 1;
         } else {
+            // Task finished: show the task-complete screen at state 5, move on to the next task at state 6
+            if (state == 5){
+                tap_state_10()
+                return;
+            }
             expIndex += 1
             block = 0;
             trial = 1;
@@ -470,6 +480,11 @@ function circle_task(state){
             block = 1;
             trial = 1;
         } else {
+            // Task finished: show the task-complete screen at state 5, move on to the next task at state 6
+            if (state == 5){
+                circle_state_10()
+                return;
+            }
             expIndex += 1
             block = 0;
             trial = 1;
@@ -634,6 +649,11 @@ function tap_state_9(){
     document.getElementById("instructions-text").innerText = BLOCK_COMPLETE_TEXT;
 }
 
+function tap_state_10(){
+    document.getElementById("header-text").innerText = TAP_TRIAL_HEADER
+    document.getElementById("instructions-text").innerText = TASK_COMPLETE_TEXT;
+}
+
 function circle_state_1(){
     document.getElementById("countdown-num").style.display = "none";
 
@@ -726,6 +746,12 @@ function circle_state_9(){
     document.getElementById("header-text").innerText = CIRCLE_TRIAL_HEADER
     document.getElementById("instructions-text").innerText =
         BLOCK_COMPLETE_TEXT;
+}
+
+function circle_state_10(){
+    document.getElementById("header-text").innerText = CIRCLE_TRIAL_HEADER
+    document.getElementById("instructions-text").innerText =
+        TASK_COMPLETE_TEXT;
 }
 
 
