@@ -34,7 +34,7 @@ class CirclePositions:
 
         # Initialize imageio reader
         try:
-            reader = imageio.get_reader(video_path)
+            reader = imageio.get_reader(video_path, format='FFMPEG', fps=self.fps)
         except Exception as e:
             print(f"Failed to open video {video_path}: {e}")
             return

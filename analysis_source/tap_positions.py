@@ -78,7 +78,7 @@ class TapPositions:
                 # Replace original file
                 os.replace("tempvideo.webm", video_path)
             try:
-                reader = imageio.get_reader(str(video_path), format='FFMPEG')
+                reader = imageio.get_reader(str(video_path), format='FFMPEG', fps=self.fps)
             except Exception as e:
                 print(f"Error opening {video_path.name}, skipping...", e)
                 continue
